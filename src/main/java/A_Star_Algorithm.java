@@ -66,6 +66,7 @@ public class A_Star_Algorithm extends FindOptimalPathAlgorithm{
 
             if(currentVertex.equals(targetVertex))
             {
+                this.targetVertex = currentVertex;
                 diagnostics.totalTimePassed = Duration.between(start, Instant.now()).toMillis();
                 diagnostics.AlgorithmName = "A* Algorithm with Heuristic being the geometrical Distance between a Vertex and the target vertex";
                 diagnostics.totalCostsForOptimalPath = currentVertex.pathCost;
@@ -78,7 +79,7 @@ public class A_Star_Algorithm extends FindOptimalPathAlgorithm{
                 //The edges for currentVertex can either be from currentVertex -> successorVertex or currentVertex <- successorVertex
                 customVertex successorVertex = (graph.getEdgeTarget(successorEdge).id == currentVertex.id)? graph.getEdgeSource(successorEdge) : graph.getEdgeTarget(successorEdge);
 
-                int successor_Current_Cost = currentVertex.pathCost + (int) graph.getEdgeWeight(successorEdge) ;
+                int successor_Current_Cost = currentVertex.pathCost +  (int)graph.getEdgeWeight(successorEdge) ;
                 if(queue.contains(successorVertex)) {
                     if (successorVertex.pathCost <= successor_Current_Cost) {
                         continue;
@@ -107,32 +108,40 @@ public class A_Star_Algorithm extends FindOptimalPathAlgorithm{
             lastVisitedVertex = currentVertex;
             queue.sort(vertexSortingComparator);
 
+//            for(customVertex vertex: queue)
+//            {
+//                System.out.println(String.format("ID: %d   Pathcosts: %d    Heuristic: %d  ----> %d", vertex.id, vertex.pathCost, vertex.heuristicCosts, vertex.pathCost + vertex.heuristicCosts));
+//            }
+
+//            Scanner sc = new Scanner(System.in);
+//            sc.next();
+
+
             currentVertex = queue.removeFirst();
         }
 
         throw new RuntimeException("Open List is Empty");
     }
 
-    public List<customVertex> getPath(customVertex targetVertex)
+    public List<customVertex> getPath()
     {
         List<customVertex> path = new LinkedList<>();
         customVertex currentVertex = targetVertex;
         while(currentVertex != null)
         {
-            System.out.println(String.format("%d --> %d", currentVertex.id, currentVertex.pathCost));
             path.add(currentVertex);
             currentVertex = currentVertex.parentVertex;
         }
-
         return path;
     }
 
-    private int getHeuristic(customVertex vertex, customVertex target)
+    private double getHeuristic(customVertex vertex, customVertex target)
     {
         Point vertexCell = this.graphAdapter.getVertexToCellMap().get(vertex).getGeometry().getPoint();
         Point targetVertexCell = this.graphAdapter.getVertexToCellMap().get(target).getGeometry().getPoint();
 
-        return (int) Math.floor(targetVertexCell.distance(vertexCell));
+
+        return targetVertexCell.distance(vertexCell);
     }
 
 }

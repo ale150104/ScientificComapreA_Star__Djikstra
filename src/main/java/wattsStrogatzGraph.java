@@ -1,16 +1,13 @@
 import com.mxgraph.layout.mxCircleLayout;
-import com.mxgraph.swing.mxGraphComponent;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.interfaces.AStarAdmissibleHeuristic;
 import org.jgrapht.alg.shortestpath.AStarShortestPath;
 import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.generate.WattsStrogatzGraphGenerator;
-import org.jgrapht.graph.DefaultUndirectedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.util.SupplierUtil;
-
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -18,6 +15,10 @@ import java.util.Random;
 import java.util.function.Supplier;
 
 public class wattsStrogatzGraph {
+
+    private Graph<customVertex, DefaultWeightedEdge> graph;
+
+    private JGraphXAdapter<customVertex, DefaultWeightedEdge> graphAdapter;
 
     public void run() {
         // --- 1. Graph erzeugen ---
@@ -30,36 +31,28 @@ public class wattsStrogatzGraph {
             }
         };
 
-        Graph<customVertex, DefaultWeightedEdge> graph =
-                new SimpleWeightedGraph<>(vertexSupplier, SupplierUtil.DEFAULT_WEIGHTED_EDGE_SUPPLIER);
+        this.graph = new SimpleWeightedGraph<>(vertexSupplier, SupplierUtil.DEFAULT_WEIGHTED_EDGE_SUPPLIER);
 
 
-        // 100 Knoten, jeder mit 4 Nachbarn, Umverdrahtungswahrscheinlichkeit 0.1
         WattsStrogatzGraphGenerator<customVertex, DefaultWeightedEdge> generator =
-                new WattsStrogatzGraphGenerator<customVertex, DefaultWeightedEdge>(1000, 90, 0.75);
+                new WattsStrogatzGraphGenerator<customVertex, DefaultWeightedEdge>(400, 52, 0.45);
 
 
         generator.generateGraph(graph);
 
-        Random random = new Random();
-
-        for (DefaultWeightedEdge edge : graph.edgeSet()) {
-            int weight = random.nextInt(1, 100); // z.B. Gewicht zwischen 1 und 10
-            graph.setEdgeWeight(edge, weight);
-        }
+        int startEdgeId = 1;
+        int targetEdgeId = 98;
 
 
         // --- 2. Visualisierung mit JGraphX ---
-        JGraphXAdapter<customVertex, DefaultWeightedEdge> graphAdapter = new JGraphXAdapter<>(graph);
+        this.graphAdapter = new JGraphXAdapter<>(graph);
 
 
-//        graph.edgeSet().forEach((edge) -> {
-//            System.out.println(graph.getEdgeWeight(edge));
-//        });
+        mxCircleLayout layout = new mxCircleLayout(graphAdapter);
+        layout.execute(graphAdapter.getDefaultParent());
 
-//        mxCircleLayout layout = new mxCircleLayout(graphAdapter);
-//        layout.execute(graphAdapter.getDefaultParent());
-//
+        this.adaptGraphForHeuristicToBeAdmissinble();
+
 //        JFrame frame = new JFrame("Watts–Strogatz Graph");
 //        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //        frame.add(new mxGraphComponent(graphAdapter));
@@ -67,15 +60,32 @@ public class wattsStrogatzGraph {
 //        frame.setVisible(true);
 
 
-//        A_Star_Algorithm a_star_Algorithm = new A_Star_Algorithm(graph, graphAdapter);
-//        pathFindingDiagnostics result = a_star_Algorithm.findOptimalPath(1, 98);
-//        System.out.println(result);
-//
-//        System.out.println("PATH:");
-//        customVertex targetvertex = graph.vertexSet().stream().filter((vertex -> vertex.id == 98)).findFirst().get();
-//
-//        List<customVertex> path = a_star_Algorithm.getPath(targetvertex);
+        A_Star_Algorithm a_star_Algorithm = new A_Star_Algorithm(graph, graphAdapter);
+        pathFindingDiagnostics result = a_star_Algorithm.findOptimalPath(startEdgeId, targetEdgeId);
 
+        List<customVertex> path = a_star_Algorithm.getPath();
+
+        System.out.println("----- Results: -----");
+        System.out.println("Path:");
+        for(customVertex vertex: path)
+        {
+            System.out.println(vertex.id);
+        }
+        System.out.println(result);
+
+
+        Djikstra_Algorithm djikstra_Algorithm = new Djikstra_Algorithm(graph, graphAdapter);
+        pathFindingDiagnostics djikstraResult = djikstra_Algorithm.findOptimalPath(startEdgeId, targetEdgeId);
+
+        List<customVertex> djikstraPath = djikstra_Algorithm.getPath();
+
+        System.out.println("----- Results: -----");
+        System.out.println("Path:");
+        for(customVertex vertex: djikstraPath)
+        {
+            System.out.println(vertex.id);
+        }
+        System.out.println(djikstraResult);
 
 
         AStarAdmissibleHeuristic<customVertex> heuristic = (p1, p2) ->
@@ -101,6 +111,35 @@ public class wattsStrogatzGraph {
         for(customVertex x : pathh.getVertexList())
         {
             System.out.println(x.id);
+        }
+
+
+    }
+
+    // To call after Graph and Graphadapter,Layout had been initialized
+
+    private void adaptGraphForHeuristicToBeAdmissinble()
+    {
+        for(DefaultWeightedEdge edge : this.graph.edgeSet())
+        {
+            customVertex sourceVertex = graph.getEdgeSource(edge);
+            customVertex targetVertex = graph.getEdgeTarget(edge);
+            Point sourcePoint = graphAdapter.getVertexToCellMap().get(sourceVertex).getGeometry().getPoint();
+            Point targetPoint = graphAdapter.getVertexToCellMap().get(targetVertex).getGeometry().getPoint();
+
+            double airlineDistance = sourcePoint.distance(targetPoint);
+
+            double currentEdgeWeight = graph.getEdgeWeight(edge);
+            if(currentEdgeWeight < airlineDistance)
+            {
+                System.err.println("Current Edgeweight violates Admissible Heuristic");
+                Random randomGenerator = new Random();
+                int newEdgeWeight = (int) Math.ceil(randomGenerator.nextDouble( airlineDistance, airlineDistance + 10));
+                // System.out.println(String.format("Airlinedistance: %f   ->  Current Weight: %f   ->   New Weight: %f", airlineDistance, currentEdgeWeight, newEdgeWeight));
+                graph.setEdgeWeight(edge, newEdgeWeight);
+            }
+
+
         }
     }
 

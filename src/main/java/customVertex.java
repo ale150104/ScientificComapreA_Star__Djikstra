@@ -3,7 +3,7 @@ public class customVertex{
 
     public int pathCost;
 
-    public int heuristicCosts;
+    public double heuristicCosts;
 
     public customVertex parentVertex;
 

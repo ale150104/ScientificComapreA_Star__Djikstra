@@ -1,8 +1,11 @@
-public class main {
+public class  main {
 
     public static void main (String[] args)
     {
         wattsStrogatzGraph graph = new wattsStrogatzGraph();
-        graph.run();
+        for(int i = 0; i < 1; i++)
+        {
+            graph.run();
+        }
     }
 }

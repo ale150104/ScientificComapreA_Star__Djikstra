@@ -65,8 +65,10 @@ public class Djikstra_Algorithm extends FindOptimalPathAlgorithm{
         {
             if(currentVertex.equals(targetVertex))
             {
+                this.targetVertex = currentVertex;
+
                 diagnostics.totalTimePassed = Duration.between(start, Instant.now()).toMillis();
-                diagnostics.AlgorithmName = "A* Algorithm with Heuristic being the geometrical Distance between a Vertex and the target vertex";
+                diagnostics.AlgorithmName = "Djikstra Algorithm";
                 diagnostics.totalCostsForOptimalPath = currentVertex.pathCost;
 
                 return diagnostics;
@@ -111,13 +113,13 @@ public class Djikstra_Algorithm extends FindOptimalPathAlgorithm{
         throw new RuntimeException("Open List is Empty");
     }
 
-    public List<customVertex> getPath(customVertex targetVertex)
+    @Override
+    public List<customVertex> getPath()
     {
         List<customVertex> path = new LinkedList<>();
         customVertex currentVertex = targetVertex;
         while(currentVertex != null)
         {
-            System.out.println(String.format("%d --> %d", currentVertex.id, currentVertex.pathCost));
             path.add(currentVertex);
             currentVertex = currentVertex.parentVertex;
         }
